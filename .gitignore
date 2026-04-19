@@ -1,0 +1,73 @@
+# Dependencies
+node_modules/
+npm-debug.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+pnpm-error.log*
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+.env.production.local
+
+# Build output
+dist/
+build/
+*.tsbuildinfo
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+*.sublime-project
+*.sublime-workspace
+
+# OS files
+Thumbs.db
+.DS_Store
+
+# Logs
+logs/
+*.log
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Database and cache files
+*.db
+*.sqlite
+*.sqlite3
+.mongodb/
+
+# Local development files
+.local
+.cache
+
+# Runtime data
+pids/
+*.pid
+*.seed
+*.pid.lock
+
+# Package lock files (optional - uncomment if preferred)
+# package-lock.json
+# yarn.lock
+# pnpm-lock.yaml
+
+# Vite dev server cache (if applicable)
+.vite/
+
+# Coverage reports
+coverage/
+.nyc_output/
+
+# Test files output
+test-results/
