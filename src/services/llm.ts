@@ -64,19 +64,97 @@ function safeJsonParse(value: string): unknown {
     return JSON.parse(cleaned);
   } catch (firstError) {
     console.log("First parse failed:", firstError instanceof Error ? firstError.message : String(firstError));
-    // Fallback: extract JSON between first { and last }
+    
+    // Extract JSON between first { and last }
     const start = cleaned.indexOf("{");
     const end = cleaned.lastIndexOf("}");
     if (start === -1 || end === -1) throw new Error("LLM returned invalid JSON payload.");
-    const jsonStr = cleaned.slice(start, end + 1);
+    
+    let jsonStr = cleaned.slice(start, end + 1);
     console.log("Extracted JSON length:", jsonStr.length);
+    
     try {
       return JSON.parse(jsonStr);
     } catch (secondError) {
-      console.log("Second parse failed:", secondError instanceof Error ? secondError.message : String(secondError));
-      throw secondError;
+      console.log("Second parse failed, attempting to fix JSON:", secondError instanceof Error ? secondError.message : String(secondError));
+      
+      // Try to fix common JSON issues
+      try {
+        // Remove unescaped newlines and carriage returns within the string
+        jsonStr = jsonStr.replace(/\n/g, " ").replace(/\r/g, " ");
+        
+        // Fix unescaped quotes in string values by escaping them
+        // This regex looks for quotes that appear after: word characters, closing brackets, or other quotes
+        // and replaces them with escaped quotes IF they're not already escaped
+        jsonStr = jsonStr.replace(/([^\\])"([^"]*?)([^\\])"/g, '$1\\"$2$3\\"');
+        
+        const parsed = JSON.parse(jsonStr);
+        console.log("Successfully repaired JSON with regex fix");
+        return parsed;
+      } catch (thirdError) {
+        console.log("Third parse failed, attempting aggressive JSON repair:", thirdError instanceof Error ? thirdError.message : String(thirdError));
+        
+        // Last resort: parse manually with strict field extraction
+        try {
+          const repaired = repairJsonString(jsonStr);
+          console.log("Repaired JSON length:", repaired.length);
+          const parsed = JSON.parse(repaired);
+          console.log("Successfully repaired JSON with aggressive repair");
+          return parsed;
+        } catch (finalError) {
+          console.log("All JSON parsing attempts failed:", finalError instanceof Error ? finalError.message : String(finalError));
+          throw new Error(`Failed to parse LLM JSON after all repair attempts. Last error: ${finalError instanceof Error ? finalError.message : String(finalError)}`);
+        }
+      }
     }
   }
+}
+
+function repairJsonString(jsonStr: string): string {
+  // Aggressive JSON repair: try to fix broken string values
+  // This works by finding patterns and repairing them
+  
+  // Replace curly quotes with straight quotes
+  jsonStr = jsonStr.replace(/[""]/g, '"').replace(/[']/g, "'");
+  
+  // Fix missing commas between objects in arrays
+  jsonStr = jsonStr.replace(/}\s*{/g, '},{');
+  jsonStr = jsonStr.replace(/}\s*\[/g, '},{');
+  jsonStr = jsonStr.replace(/\]\s*{/g, '},{');
+  
+  // Fix trailing commas
+  jsonStr = jsonStr.replace(/,(\s*[}\]])/g, '$1');
+  
+  // Try to escape unescaped quotes within string values
+  // Split by quotes and try to intelligently re-quote
+  const parts = jsonStr.split('"');
+  const repaired: string[] = [];
+  
+  for (let i = 0; i < parts.length; i++) {
+    if (i % 2 === 0) {
+      // Even indices: outside of strings (structural JSON)
+      repaired.push(parts[i]);
+    } else {
+      // Odd indices: inside strings
+      const stringValue = parts[i];
+      // Escape any unescaped quotes and special chars
+      const escaped = stringValue
+        .replace(/\\/g, '\\\\') // Escape backslashes first
+        .replace(/"/g, '\\"')   // Escape quotes
+        .replace(/\n/g, '\\n') // Escape newlines
+        .replace(/\r/g, '\\r') // Escape carriage returns
+        .replace(/\t/g, '\\t'); // Escape tabs
+      repaired.push('"' + escaped + '"');
+    }
+  }
+  
+  // Rejoin, but be careful not to double-quote
+  let result = '';
+  for (let i = 0; i < repaired.length; i++) {
+    result += repaired[i];
+  }
+  
+  return result;
 }
 
 function extractGeneratedText(data: unknown): string {

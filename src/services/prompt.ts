@@ -51,16 +51,30 @@ ${previousConversation}
 Context docs:
 ${context}
 
-JSON format:
+CRITICAL INSTRUCTIONS FOR JSON OUTPUT:
+1. Return ONLY valid JSON. Do not add any text before or after.
+2. Escape all quotes inside string values with backslash: \"
+3. Replace newlines in strings with spaces.
+4. Use double quotes for all strings and keys.
+5. Ensure all arrays and objects are properly closed.
+6. Never include markdown, code blocks, or explanations.
+
+JSON format (must be EXACT):
 {
-  "conditionOverview": "string",
-  "researchInsights": [{"title":"string","summary":"string","keyFinding":"string","sourceId":"string"}],
-  "clinicalTrials": [{"title":"string","recruitingStatus":"string","eligibilityCriteria":"string","location":"string","contactInformation":"string","sourceId":"string"}],
-  "sources": [{"sourceId":"string","title":"string","authors":["string"],"year":2024,"platform":"string","url":"string","supportingSnippet":"string"}],
-  "followUpSuggestions": ["string"],
-  "safetyDisclaimer": "string"
+  "conditionOverview": "brief summary of the condition",
+  "researchInsights": [
+    {"title":"paper title","summary":"key findings","keyFinding":"most important result","sourceId":"source_id"}
+  ],
+  "clinicalTrials": [
+    {"title":"trial name","recruitingStatus":"status","eligibilityCriteria":"criteria","location":"location","contactInformation":"contact","sourceId":"source_id"}
+  ],
+  "sources": [
+    {"sourceId":"id","title":"title","authors":["author1","author2"],"year":2024,"platform":"platform","url":"url","supportingSnippet":"snippet"}
+  ],
+  "followUpSuggestions": ["question1","question2","question3"],
+  "safetyDisclaimer": "This is not medical advice. Consult a healthcare provider."
 }
 
-Output only the JSON object, nothing else.
+Output only the JSON object, nothing else. No markdown. No code blocks. No text before or after.
 `.trim();
 }

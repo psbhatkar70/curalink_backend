@@ -73,18 +73,27 @@ researchRouter.post("/", async (req, res) => {
   const prompt = buildPrompt(input, docs, expanded, history);
   let response: any;
   let retryCount = 0;
-  const maxRetries = 2;
+  const maxRetries = 3;
   while (retryCount <= maxRetries) {
     try {
-      const currentPrompt = retryCount === 0 ? prompt : `${prompt}\nReturn only valid JSON with no markdown fences or extra text. Ensure all arrays are properly closed.`;
+      let currentPrompt = prompt;
+      if (retryCount === 1) {
+        currentPrompt = `${prompt}\n\nIMPORTANT: Return ONLY valid JSON. No markdown. No code blocks. No text before or after. Escape all quotes with backslash.`;
+      } else if (retryCount === 2) {
+        currentPrompt = `${prompt}\n\nSTRICT JSON OUTPUT ONLY: {"conditionOverview":"text","researchInsights":[...],"clinicalTrials":[...],"sources":[...],"followUpSuggestions":[...],"safetyDisclaimer":"text"}. No other text.`;
+      } else if (retryCount === 3) {
+        currentPrompt = `${prompt}\n\nReturn ONLY this JSON structure with no modifications: output must be valid JSON parseable by JSON.parse(). Escape all internal quotes. Use double quotes only.`;
+      }
       response = await generateStructuredAnswer(currentPrompt);
+      console.log(`LLM generation succeeded on attempt ${retryCount + 1}`);
       break; // Success, exit loop
     } catch (error) {
       retryCount++;
       if (retryCount > maxRetries) {
+        console.error(`LLM generation failed after ${maxRetries + 1} attempts:`, error);
         throw error; // Re-throw after max retries
       }
-      console.warn(`LLM generation failed (attempt ${retryCount}), retrying...`);
+      console.warn(`LLM generation failed (attempt ${retryCount}), retrying with stricter prompt...`);
     }
   }
 
